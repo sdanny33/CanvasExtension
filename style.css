@@ -1,57 +1,140 @@
-.custom-task-card {
-  background: #ffffff;
-  border: 1px solid #dcdcdc;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.task-card-header {
-  font-size: 16px;
-  font-weight: 700;
-  margin-bottom: 12px;
-  color: #2d3b45;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 8px;
-}
-
-.task-card-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.task-card-item {
+#custom-task-container {
   display: flex;
   flex-direction: column;
-  padding: 8px 0;
-  border-bottom: 1px solid #f0f0f0;
+  gap: 14px;
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 24px;
+  font-family: inherit;
 }
 
-.task-card-item:last-child {
-  border-bottom: none;
+/* Progress Section */
+.progress-card {
+  background-color: #dcdcdc;
+  border: 1.5px solid #111;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.progress-header {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 12px;
+}
+
+.progress-bars-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 14px;
+  background: #bbbbbb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Task Cards */
+.task-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #dcdcdc;
+  border: 1.5px solid #111;
+  border-radius: 14px;
+  padding: 12px 14px;
+  transition: transform 0.15s ease, opacity 0.2s ease;
+}
+
+.task-card.is-completed {
+  opacity: 0.75;
+}
+
+.task-card.is-completed .task-title {
+  text-decoration: line-through;
+}
+
+.task-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 80%;
+}
+
+.task-course-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--item-color);
+  line-height: 1.2;
 }
 
 .task-title {
-  color: #0374b5;
-  font-weight: 600;
   font-size: 14px;
+  font-weight: 700;
+  color: var(--item-color);
   text-decoration: none;
+  line-height: 1.25;
+  margin: 2px 0;
 }
 
 .task-title:hover {
   text-decoration: underline;
 }
 
-.task-date {
-  font-size: 12px;
-  color: #6c757d;
-  margin-top: 2px;
+.task-due-date {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--item-color);
+}
+
+/* Completion Checkbox */
+.task-checkbox {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  border: 2px solid #111;
+  background-color: transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 0.15s ease;
+}
+
+.task-checkbox.checked {
+  background-color: #111;
 }
 
 .task-empty-msg {
   font-size: 13px;
-  color: #6c757d;
-  margin: 0;
+  color: #555;
+  margin: 4px 0;
+}
+
+/* Completed Accordion */
+.completed-section {
+  border-top: 1px dashed #999;
+  padding-top: 10px;
+}
+
+.completed-summary {
+  font-size: 13px;
+  font-weight: 700;
+  color: #444;
+  cursor: pointer;
+  user-select: none;
 }
