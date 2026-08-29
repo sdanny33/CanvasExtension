@@ -4,10 +4,10 @@
   "version": "1.0",
   "manifest_version": 3,
   "icons": {
-    "16": "images/icon-16.png",
-    "32": "images/icon-32.png",
-    "48": "images/icon-48.png",
-    "128": "images/icon-128.png"
+    "16": "images/BCLOGO16.png",
+    "32": "images/BCLOGO32.png",
+    "48": "images/BCLOGO48.png",
+    "128": "images/BCLOGO128.png"
   },
   "action": {
     "default_popup": "hello.html",
@@ -17,8 +17,7 @@
     {
       "js": ["scripts/content.js"],
       "matches": [
-        "https://canvas.vt.edu/*",
-        "https://canvas.*.edu/*"
+        "https://canvas.vt.edu/*"
       ]
     }
   ]
