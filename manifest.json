@@ -12,6 +12,12 @@
     "default_popup": "hello.html",
     "default_icon": "images/BC_Logo_256.png"
   },
+  "host_permissions": [
+    "https://courses.cs.vt.edu/*"
+  ],
+  "background": {
+    "service_worker": "scripts/background.js"
+  },
   "content_scripts": [
     {
       "js": ["scripts/content.js"],
