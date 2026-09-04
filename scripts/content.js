@@ -5,14 +5,14 @@ let appState = {
 
 const FALLBACK_PALETTE = ['#8a2be2', '#dc2626', '#16a34a', '#2563eb', '#d97706', '#db2777'];
 
-// Helper to calculate the 7-day rolling window
+// Helper to calculate a 14-day rolling window: 7 days prior to 7 days ahead
 function getDateWindow() {
   const now = new Date();
   
-  // Start of today (00:00:00)
-  const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  // 7 days before today (00:00:00)
+  const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7, 0, 0, 0);
   
-  // End of the 7th day (23:59:59)
+  // 7 days after today (23:59:59)
   const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7, 23, 59, 59);
 
   return {
@@ -107,8 +107,9 @@ async function fetchCS3214Tasks() {
 async function fetchPlannerData() {
   const { startIso, endIso, startDate, endDate } = getDateWindow();
 
+// Inside fetchPlannerData():
   const [plannerRes, coursesRes, colorsRes, nicknamesRes, csTasks] = await Promise.all([
-    fetch(`/api/v1/planner/items?start_date=${startIso}&end_date=${endIso}`),
+    fetch(`/api/v1/planner/items?start_date=${encodeURIComponent(startIso)}&end_date=${encodeURIComponent(endIso)}&per_page=100`),
     fetch('/api/v1/courses?enrollment_state=active&per_page=50'),
     fetch('/api/v1/users/self/colors'),
     fetch('/api/v1/users/self/course_nicknames'),
