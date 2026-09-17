@@ -9,17 +9,17 @@ const FALLBACK_PALETTE = ['#8a2be2', '#dc2626', '#16a34a', '#2563eb', '#d97706',
 function getDateWindow() {
   const now = new Date();
   
-  // 7 days before today (00:00:00)
+  // 7 days prior at 00:00:00 local time
   const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7, 0, 0, 0);
   
-  // 7 days after today (23:59:59)
+  // 7 days ahead at 23:59:59 local time
   const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7, 23, 59, 59);
 
   return {
     startDate,
     endDate,
-    startIso: startDate.toISOString().split('T')[0],
-    endIso: endDate.toISOString().split('T')[0]
+    startIso: startDate.toISOString(),
+    endIso: endDate.toISOString()
   };
 }
 
@@ -107,7 +107,6 @@ async function fetchCS3214Tasks() {
 async function fetchPlannerData() {
   const { startIso, endIso, startDate, endDate } = getDateWindow();
 
-// Inside fetchPlannerData():
   const [plannerRes, coursesRes, colorsRes, nicknamesRes, csTasks] = await Promise.all([
     fetch(`/api/v1/planner/items?start_date=${encodeURIComponent(startIso)}&end_date=${encodeURIComponent(endIso)}&per_page=100`),
     fetch('/api/v1/courses?enrollment_state=active&per_page=50'),
@@ -150,9 +149,13 @@ async function fetchPlannerData() {
     color: '#0d6efd'
   };
 
-  // Filter all assignments strictly within the 7-day rolling window
+  // Combine and filter items: exclude announcements and enforce the rolling window
   const combinedItems = [...plannerItems, ...csTasks]
     .filter(item => {
+      // Exclude announcements
+      if (item.plannable_type === 'announcement') return false;
+
+      // Ensure item has a due date within the 14-day window
       if (!item.plannable_date) return false;
       const dueDate = new Date(item.plannable_date);
       return dueDate >= startDate && dueDate <= endDate;
@@ -216,7 +219,7 @@ function renderApp() {
   const activeTasks = appState.plannerItems.filter(item => !completed.includes(item.plannable_id));
   const completedTasks = appState.plannerItems.filter(item => completed.includes(item.plannable_id));
 
-  // 1. Render Progress Bars
+  // 1. Calculate per-course completion statistics
   const stats = {};
   appState.plannerItems.forEach(task => {
     const cId = resolveCourseId(task) || 'general';
@@ -233,19 +236,26 @@ function renderApp() {
     }
   });
 
-  const barsHtml = Object.values(stats).map(data => {
-    const percentage = data.total > 0 ? (data.done / data.total) * 100 : 0;
-    return `
-      <div class="progress-bar-track">
-        <div class="progress-bar-fill" style="width: ${percentage}%; background-color: ${data.color};"></div>
-      </div>
-    `;
-  }).join('');
+  // 2. Render Progress Bars with fractions (e.g. 4/4, 1/3)
+  const barsHtml = Object.values(stats)
+    .filter(data => data.total > 0)
+    .map(data => {
+      const percentage = (data.done / data.total) * 100;
+      return `
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" style="width: ${percentage}%; background-color: ${data.color};">
+            <span class="progress-bar-label">${data.done}/${data.total}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
 
   const barsContainer = document.getElementById('task-progress-bars');
-  if (barsContainer) barsContainer.innerHTML = barsHtml;
+  if (barsContainer) {
+    barsContainer.innerHTML = barsHtml;
+  }
 
-  // 2. Render Active Task Cards
+  // 3. Render Active Task Cards
   const activeContainer = document.getElementById('active-tasks-list');
   if (activeContainer) {
     activeContainer.innerHTML = activeTasks.length > 0
@@ -253,11 +263,13 @@ function renderApp() {
       : `<p class="task-empty-msg">All caught up!</p>`;
   }
 
-  // 3. Render Completed Task Cards
+  // 4. Render Completed Task Cards
   const completedContainer = document.getElementById('completed-tasks-list');
   const completedCount = document.getElementById('completed-count');
-  if (completedCount) completedCount.innerText = completedTasks.length;
-  
+  if (completedCount) {
+    completedCount.innerText = completedTasks.length;
+  }
+
   if (completedContainer) {
     completedContainer.innerHTML = completedTasks.length > 0
       ? completedTasks.map(item => renderCard(item, true)).join('')
