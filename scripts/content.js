@@ -45,10 +45,8 @@ function getDashboardDomColors() {
   return domColors;
 }
 
-// Fetch external course assignments from CS 3214 page via background script
-async function fetchCS3214Tasks() {
-  const targetUrl = 'https://courses.cs.vt.edu/cs3214/fall2026/exercises/duedates';
-
+// Generalized parser for CS 3214 exercises and projects pages
+async function fetchCS3214Items(targetUrl, prefix) {
   return new Promise((resolve) => {
     if (!chrome.runtime?.sendMessage) {
       return resolve([]);
@@ -58,7 +56,7 @@ async function fetchCS3214Tasks() {
       { action: 'fetchExternalDueDates', url: targetUrl },
       (response) => {
         if (!response || !response.success) {
-          console.warn('Could not load external due dates:', response?.error);
+          console.warn(`Could not load external due dates from ${targetUrl}:`, response?.error);
           return resolve([]);
         }
 
@@ -70,10 +68,10 @@ async function fetchCS3214Tasks() {
         rows.forEach((row, index) => {
           const cells = row.querySelectorAll('td');
           if (cells.length >= 3) {
-            const exerciseId = cells[0].textContent.trim(); // e.g., "ex0"
-            const exerciseTitle = cells[1].textContent.trim(); // e.g., "Exercise 0 Warmup"
+            const itemId = cells[0].textContent.trim(); // e.g., "p1", "ex0"
+            const itemTitle = cells[1].textContent.trim(); // e.g., "warmup", "Exercise 0"
             
-            // Clone cell to strip out child elements (links/buttons/icons) before parsing date
+            // Clone cell to strip out child buttons/links/icons
             const dateCellClone = cells[2].cloneNode(true);
             dateCellClone.querySelectorAll('a, button, svg').forEach(el => el.remove());
             
@@ -84,11 +82,11 @@ async function fetchCS3214Tasks() {
 
             if (!isNaN(parsedDate.getTime())) {
               tasks.push({
-                plannable_id: `cs3214_${exerciseId || index}`,
+                plannable_id: `cs3214_${prefix}_${itemId || index}`,
                 course_id: 'cs3214_custom',
                 context_name: 'Computer Systems',
                 plannable: {
-                  title: `${exerciseId}: ${exerciseTitle}`
+                  title: `${itemId}: ${itemTitle}`
                 },
                 plannable_date: parsedDate.toISOString(),
                 html_url: targetUrl
@@ -103,7 +101,20 @@ async function fetchCS3214Tasks() {
   });
 }
 
-// Pull planner data, courses, colors, nicknames, and external exercises
+// Pull all exercises and projects for CS 3214
+async function fetchAllCS3214Tasks() {
+  const exercisesUrl = 'https://courses.cs.vt.edu/cs3214/fall2026/exercises/duedates';
+  const projectsUrl = 'https://courses.cs.vt.edu/cs3214/fall2026/projects/duedates';
+
+  const [exercises, projects] = await Promise.all([
+    fetchCS3214Items(exercisesUrl, 'ex'),
+    fetchCS3214Items(projectsUrl, 'proj')
+  ]);
+
+  return [...exercises, ...projects];
+}
+
+// Pull planner data, courses, colors, nicknames, and external exercises/projects
 async function fetchPlannerData() {
   const { startIso, endIso, startDate, endDate } = getDateWindow();
 
@@ -112,7 +123,7 @@ async function fetchPlannerData() {
     fetch('/api/v1/courses?enrollment_state=active&per_page=50'),
     fetch('/api/v1/users/self/colors'),
     fetch('/api/v1/users/self/course_nicknames'),
-    fetchCS3214Tasks()
+    fetchAllCS3214Tasks()
   ]);
 
   const [plannerItems, courses, colorsData, nicknames] = await Promise.all([
@@ -149,13 +160,13 @@ async function fetchPlannerData() {
     color: '#0d6efd'
   };
 
-  // Combine and filter items: exclude announcements and enforce the rolling window
+  // Combine and enforce assignment filtering (excludes announcements)
   const combinedItems = [...plannerItems, ...csTasks]
     .filter(item => {
-      // Exclude announcements
+      // Filter out announcements
       if (item.plannable_type === 'announcement') return false;
 
-      // Ensure item has a due date within the 14-day window
+      // Filter within the 14-day rolling window
       if (!item.plannable_date) return false;
       const dueDate = new Date(item.plannable_date);
       return dueDate >= startDate && dueDate <= endDate;
